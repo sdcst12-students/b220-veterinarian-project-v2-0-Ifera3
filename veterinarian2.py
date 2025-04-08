@@ -6,25 +6,63 @@ import sqlite3
 connection = sqlite3.connect("dbase.db")
 cursor = connection.cursor()
 
-def createTable(tableName, tableColums):
-    colums = ''
-    if len(tableColums) == 1000:
+tablesInDatabase = {}
+
+class sqlBase():
+    def __init__(self, tableName, columsAndData, name = None):
+        self.name = name
+        self.tableName = tableName
+        self.colums = columsAndData
+    
+    def __str__(self):
+        ...
+
+class table(sqlBase):
+    def __init__(self, tableName, columsAndDataType, vishualName = None):
+        self.entrys = []
+        if vishualName == None:
+            super().__init__(tableName,columsAndDataType,tableName)
+        else:
+            super().__init__(tableName,columsAndDataType,vishualName)
+        self.columString = "id integer primary key autoincrement"
+        for colum in columsAndDataType:
+            self.columString += ", " + colum
+        result = self.createTable()
+        #print(result)
+        tablesInDatabase[vishualName] = self
+        
+    def createTable(self):
         colums = ''
-    else:
-        for colum in tableColums:
-            colums += f", {colum} {tableColums[colum]}"
-    query = f"create table if not exists {tableName} (id integer primary key autoincrement{colums});"
+        for colum in self.colums:
+            colums += f", {colum} {self.colums[colum]}"
+        query = f"create table if not exists {self.name} (id integer primary key autoincrement{colums});"
+        cursor.execute(query)
+        cursor.execute(f'PRAGMA table_info({self.name});')
+        return cursor.fetchall()
+
+class sqlData(sqlBase):
+    def __init__(self, tableName, columsAndData):
+        super().__init__(tableName, columsAndData)
+        self.addEntry()
+    
+    def addEntry(self):
+        ...
+
+
+table("Test", {'name':'tinytext'})
+table("Test2", {"name":"tinytext","number":"integer"})
+print(tablesInDatabase['Test2'].colums)
+
+def surchTable(surchTable, surchColum, surchData, requestedData = "*"):
+    if surchColum not in tablesInDatabase[surchTable].colums:
+        return False, None
+    query = f"Select {requestedData} from {tablesInDatabase[surchTable].name} where {surchColum} = {surchData};"
     cursor.execute(query)
-    cursor.execute(f'PRAGMA table_info({tableName});')
-    print(cursor.fetchall())
+    return True, cursor.fetchall()
 
-createTable("Test2", {"name":"tinytext","number":"integer"})
-
-def surchTable():
-    ...
-
-def addEntery():
-    ...
+def addEntery(table, newDataObject):
+    query = f"insert into {table.name} ({table.columString}) values ({newDataObject});"
+    cursor.execute(query)
 
 def changeEntry():
     ...
