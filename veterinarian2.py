@@ -58,6 +58,8 @@ class sqlTable(sqlBase):
                data.update({result[column][1]:row[column]})
             #print(data)
             sqlData(self.tableName,data,False)
+        self.columData.update({'id':"INTEGER"})
+        #print(self.columData)
         
     def createTable(self):
         query = f"create table if not exists {self.name} (id integer primary key autoincrement, {self.displayColumData()});"
@@ -66,11 +68,12 @@ class sqlTable(sqlBase):
         return cursor.fetchall() # returns table info
 
 class sqlData(sqlBase):
-    def __init__(self, tableName, columsAndData,needToAdd = True):
+    def __init__(self, tableName, columsAndData, needToAdd = True):
         super().__init__(tableName, columsAndData)
         tablesInDatabase[self.tableName].entrys.append(self)
         if needToAdd:
             self.addEntry()
+        #print(self.columData)
     
     def addEntry(self):
         query = f"insert into {self.tableName} ({self.colums}) Values ({self.displayData()});"
@@ -78,47 +81,113 @@ class sqlData(sqlBase):
         #cursor.execute(f'select * from {self.tableName};')
         #print(cursor.fetchall())
 
+'''
+query ="SELECT name FROM sqlite_master WHERE type='table';"
+cursor.execute(query)
+result = cursor.fetchall()
+print(result)
+
+for i in result:
+    cursor.execute(f'PRAGMA table_info({i[0]});')
+    print(cursor.fetchall(),i[0])
+'''
+
+def reAddTable():
+    query = "SELECT * FROM sqlite_sequence;"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    #print(result)
+    for table in result:
+        if table[0] == 'npc' or table[0] == 'customers':
+            continue
+        columnType = {}
+        cursor.execute(f'PRAGMA table_info({table[0]});')
+        columns = cursor.fetchall()
+        for column in columns:
+            columnType.update({column[1]:column[2]})
+        sqlTable(table[0],columnType)
+        
+reAddTable()
 
 #sqlTable("Test", {'name':'tinytext'})
-sqlTable("Test2", {"name":"tinytext","number":"integer"})
+#sqlTable("Test2", {"name":"tinytext","number":"integer"})
 #sqlData("Test2", {"name":"Joe",'number':3})
-print(tablesInDatabase['Test2'].entrys[0].columData)
+#print(tablesInDatabase['Test2'].entrys)
 
 def surchTable(surchTable, surchColum, surchData, requestedData = "*"):
     if surchTable not in tablesInDatabase:# If table does not exsist stop from crash
         return None
-    if surchColum not in tablesInDatabase[surchTable].columData and surchColum != 'id': # if the requested colum does not exsist won't crash 
+    if surchColum not in tablesInDatabase[surchTable].columData: # if the requested colum does not exsist won't crash 
         return None
     query = f"Select {requestedData} from {tablesInDatabase[surchTable].name} where {surchColum} = {surchData};"
     cursor.execute(query)
     return cursor.fetchall()
 
-print(surchTable("Test2","name", "'Joe'"))
+#print(surchTable("Test2","name", "'Joe'"))
 #connection.commit()
 
 def changeEntry(table, id, updateColum, updateData):
     if table not in tablesInDatabase:# If table does not exsist stop from crash
         return None
-    if updateData not in tablesInDatabase[surchTable].columData and updateColum != 'id': # if the requested colum does not exsist won't crash  
+    if updateData not in tablesInDatabase[surchTable].columData: # if the requested colum does not exsist won't crash  
         return None
     query = f"Update {tablesInDatabase[table].name} set {updateColum} = {updateData} where id = {id};"
     cursor.execute(query)
     return cursor.fetchall()
 
-"""
+
 window = tk.Tk()
 window.attributes('-topmost',True)
 
+'''
 fromBox = tk.StringVar()
-
 box = tk.Entry(window,textvariable=fromBox)
 box.grid(row=1,column=1,padx=10,pady=10)
-
 def show():
     print(fromBox.get())
-
 push = tk.Button(window,text="Enter",command=show)
 push.grid(row=1,column=2)
+'''
 
-window.mainloop()
+tempButon = []
+def adding():
+    #tempText = []
+    b = 1
+    e = 0
+    for table in tablesInDatabase:
+        a = 0
+        for i in tablesInDatabase[table].columData:
+            tempButon.append(tk.Button(window,text=i))
+            tempButon[e].grid(row=b,column=a,padx=10,pady=10)
+            a += 1
+            e += 1
+        b += 1
+
+
+add = tk.Button(window,text='add',command=adding)
+add.grid(row=10,column=10,padx=10,pady=10)
+
+def removing():
+    global tempButon
+    for button in tempButon:
+        button.destroy()
+    tempButon = []
+
+remove = tk.Button(window,text='remove',command=removing)
+remove.grid(row=10,column=9,padx=10,pady=10)
+
+""" first test of temperary buttons
+tempButon = []
+tempText = []
+b = 1
+e = 0
+for table in tablesInDatabase:
+    a = 0
+    for i in tablesInDatabase[table].columData:
+        tempButon.append(tk.Button(window,text=i))
+        tempButon[e].grid(row=b,column=a,padx=10,pady=10)
+        a += 1
+        e += 1
+    b += 1
 """
+window.mainloop()
