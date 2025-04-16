@@ -98,8 +98,8 @@ def reAddTable():
     result = cursor.fetchall()
     #print(result)
     for table in result:
-        if table[0] == 'npc' or table[0] == 'customers':
-            continue
+        #if table[0] == 'npc' or table[0] == 'customers':
+        #    continue
         columnType = {}
         cursor.execute(f'PRAGMA table_info({table[0]});')
         columns = cursor.fetchall()
@@ -149,7 +149,75 @@ push = tk.Button(window,text="Enter",command=show)
 push.grid(row=1,column=2)
 '''
 
+instructionsText = tk.StringVar(window,'Test')
+instructionsLable = tk.Label(window,textvariable=instructionsText)
+instructionsLable.grid(row=1,column=1,columnspan=10,padx=10)
 tempButon = []
+tempRadio = []
+tempLable = []
+tempEnter = []
+
+def clearWindow():
+    global tempButon, tempRadio, tempLable, tempEnter
+    instructionsText.set('')
+    for buton in tempButon:
+        buton.destroy()
+    for radio in tempRadio:
+        radio.destroy()
+    for lable in tempLable:
+        lable.destroy()
+    tempButon = []
+    tempRadio = []
+    tempLable = []
+    tempEnter = []
+
+def continueOption(optionSelected): #return what table is selected
+    clearWindow()
+    if optionSelected == "surch":
+        tempEnter.insert(0,tk.Entry(window))
+        tempEnter[0].grid(row=3,column=1,pady=10,padx=10)
+
+def tableSelect(option): #return what table is selected
+    global tableSelected
+    instructionsText.set("Select Table")
+    tableSelected = tk.StringVar(window)
+    a = 0
+    tempLable.append(tk.Label(window,text='You have Selected:'))
+    tempLable[-1].grid(row=3,column=1)
+    tempLable.append(tk.Label(window,textvariable=tableSelected))
+    tempLable[-1].grid(row=3,column=2)
+    for table in tablesInDatabase:
+        tempRadio.append(tk.Radiobutton(window,variable=tableSelected,value=table,text=table))
+        tempRadio[a].grid(row=2,column=1+a,padx=10,pady=10)
+        tableSelected.set(table)
+        a += 1
+    tempButon.append(tk.Button(window,text='Submit',command=lambda:continueOption(option)))
+    tempButon[-1].grid(row=3,column=3)
+    
+    
+
+def startoption(option):
+    stopOptionSelect()
+    tableSelect(option)
+
+def startEdit():
+    ...
+
+surchButton = tk.Button(window,text='Surch Table',command=lambda:startoption('surch'))
+editButton = tk.Button(window,text='Edit Entry',command=lambda:startoption('edit'))
+
+def stopOptionSelect():
+    surchButton.grid_forget()
+    editButton.grid_forget()
+
+def startOptionSelect():
+    instructionsText.set("Select Option")
+    surchButton.grid(column=1,row=2,padx=10,pady=10)
+    editButton.grid(column=2,row=2,padx=10,pady=10)
+
+startOptionSelect()
+
+'''
 def adding():
     #tempText = []
     b = 1
@@ -163,7 +231,6 @@ def adding():
             e += 1
         b += 1
 
-
 add = tk.Button(window,text='add',command=adding)
 add.grid(row=10,column=10,padx=10,pady=10)
 
@@ -175,7 +242,7 @@ def removing():
 
 remove = tk.Button(window,text='remove',command=removing)
 remove.grid(row=10,column=9,padx=10,pady=10)
-
+'''
 """ first test of temperary buttons
 tempButon = []
 tempText = []
