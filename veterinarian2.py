@@ -121,6 +121,7 @@ def surchTable(surchTable, surchColum, surchData, requestedData = "*"):
         return None
     query = f"Select {requestedData} from {tablesInDatabase[surchTable].name} where {surchColum} = {surchData};"
     cursor.execute(query)
+    #print(cursor.fetchall())
     return cursor.fetchall()
 
 #print(surchTable("Test2","name", "'Joe'"))
@@ -166,16 +167,88 @@ def clearWindow():
         radio.destroy()
     for lable in tempLable:
         lable.destroy()
+    for enter in tempEnter:
+        enter.destroy()
     tempButon = []
     tempRadio = []
     tempLable = []
     tempEnter = []
 
-def continueOption(optionSelected): #return what table is selected
+def continueOption(optionSelected,tableSelected): #return what table is selected
     clearWindow()
     if optionSelected == "surch":
-        tempEnter.insert(0,tk.Entry(window))
-        tempEnter[0].grid(row=3,column=1,pady=10,padx=10)
+        colum = tk.StringVar(window)
+        a=1
+        for column in tablesInDatabase[tableSelected].columData:
+            tempRadio.append(tk.Radiobutton(window,variable=colum,value=column,text=column))
+            tempRadio[-1].grid(row=2,column=a,padx=10,pady=10)
+            a+=1
+        colum.set('id')
+        tempButon.append(tk.Button(window,text="Submit",command=lambda:continueSurchData(tableSelected,[colum.get()])))
+        tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+
+def continueSurchData(tableSelected,surchData):
+    clearWindow()
+    tempEnter.insert(0,tk.Entry(window))
+    tempEnter[0].grid(row=2,column=2,pady=10,padx=10)
+    tempButon.append(tk.Button(window,text="Submit",command=lambda:continueSurchFindNum(tableSelected,surchData,tempEnter[0].get())))
+    tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+
+def continueSurchFindNum(tableSelected,surchData,data):
+    clearWindow()
+    if tablesInDatabase[tableSelected].columData[surchData[0]] == 'tinytext':
+        data = f"'{data}'"
+    surchData.append(data)
+    #print(surchData)
+    chose = tk.IntVar(window)
+    a=1
+    for num in range(len(tablesInDatabase[tableSelected].columData)):
+        if num == len(tablesInDatabase[tableSelected].columData)-1:
+            tempRadio.append(tk.Radiobutton(window,variable=chose,value=num+1,text='All'))
+            tempRadio[-1].grid(row=4,column=a,padx=10,pady=10)
+        else:
+            tempRadio.append(tk.Radiobutton(window,variable=chose,value=num+1,text=num+1))
+            tempRadio[-1].grid(row=4,column=a,padx=10,pady=10)
+        a+=1
+    tempButon.append(tk.Button(window,text='Submit',command=lambda:continueSurchFindColum(tableSelected,surchData,chose.get(),0,[])))
+    tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+
+
+def continueSurchFindColum(tableSelected,surchData,num,loopNum,findColums,add=None):
+    clearWindow()
+    findColums.append(add)
+    if num == len(tablesInDatabase[tableSelected].columData):
+        startSurch(tableSelected,surchData[0],surchData[1],'*')
+    elif loopNum == num:
+        startSurch(tableSelected,surchData[0],surchData[1],findColums)
+    else:
+        colum = tk.StringVar(window)
+        a=1
+        for column in tablesInDatabase[tableSelected].columData:
+            if column in findColums:
+                continue
+            tempRadio.append(tk.Radiobutton(window,variable=colum,value=column,text=column))
+            tempRadio[-1].grid(row=2,column=a,padx=10,pady=10)
+            a+=1
+        colum.set('id')
+        tempButon.append(tk.Button(window,text='Submit',command=lambda:continueSurchFindColum(tableSelected,surchData,num,loopNum+1,findColums,colum)))
+        tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+
+
+'''tempEnter.insert(1,tk.Entry(window))
+tempEnter[1].grid(row=3,column=2,pady=10,padx=10)
+tempEnter.insert(2,tk.Entry(window))
+tempEnter[2].grid(row=3,column=3,pady=10,padx=10)'''
+#tempButon.insert(0,tk.Button(window,text="surch",command=lambda:startSurch(tableSelected,colum.get(),tempEnter[0].get(),tempEnter[2].get())))
+#tempButon[0].grid(row=3,column=4,pady=10,padx=10)
+
+def startSurch(table, colum, data, find):
+    clearWindow()
+    result = surchTable(table,colum,data,find)
+    #print(result,table, colum, data, find)
+    for i in range(len(result)):
+        tempLable.append(tk.Label(window,text=result[i]))
+        tempLable[-1].grid(row=2,column=1+i,pady=10,padx=10)
 
 def tableSelect(option): #return what table is selected
     global tableSelected
@@ -191,17 +264,13 @@ def tableSelect(option): #return what table is selected
         tempRadio[a].grid(row=2,column=1+a,padx=10,pady=10)
         tableSelected.set(table)
         a += 1
-    tempButon.append(tk.Button(window,text='Submit',command=lambda:continueOption(option)))
-    tempButon[-1].grid(row=3,column=3)
-    
+    tempButon.append(tk.Button(window,text='Submit',command=lambda:continueOption(option,tableSelected.get())))
+    tempButon[-1].grid(row=3,column=3) 
     
 
 def startoption(option):
     stopOptionSelect()
     tableSelect(option)
-
-def startEdit():
-    ...
 
 surchButton = tk.Button(window,text='Surch Table',command=lambda:startoption('surch'))
 editButton = tk.Button(window,text='Edit Entry',command=lambda:startoption('edit'))
