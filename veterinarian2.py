@@ -115,11 +115,13 @@ reAddTable()
 #print(tablesInDatabase['Test2'].entrys)
 
 def surchTable(surchTable, surchColum, surchData, requestedData = "*"):
+    print(surchTable, surchColum, surchData, requestedData)
     if surchTable not in tablesInDatabase:# If table does not exsist stop from crash
         return None
     if surchColum not in tablesInDatabase[surchTable].columData: # if the requested colum does not exsist won't crash 
         return None
     query = f"Select {requestedData} from {tablesInDatabase[surchTable].name} where {surchColum} = {surchData};"
+    print(query)
     cursor.execute(query)
     #print(cursor.fetchall())
     return cursor.fetchall()
@@ -130,11 +132,14 @@ def surchTable(surchTable, surchColum, surchData, requestedData = "*"):
 def changeEntry(table, id, updateColum, updateData):
     if table not in tablesInDatabase:# If table does not exsist stop from crash
         return None
-    if updateData not in tablesInDatabase[surchTable].columData: # if the requested colum does not exsist won't crash  
+    if updateColum not in tablesInDatabase[table].columData: # if the requested colum does not exsist won't crash  
         return None
     query = f"Update {tablesInDatabase[table].name} set {updateColum} = {updateData} where id = {id};"
+    print(query)
     cursor.execute(query)
-    return cursor.fetchall()
+    tablesInDatabase[table].entrys[id-1].columData[updateColum]=updateData
+    #connection.commit()
+    return None #cursor.fetchall()
 
 
 window = tk.Tk()
@@ -186,11 +191,38 @@ def continueOption(optionSelected,tableSelected): #return what table is selected
         colum.set('id')
         tempButon.append(tk.Button(window,text="Submit",command=lambda:continueSurchData(tableSelected,[colum.get()])))
         tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+    if optionSelected == "edit":
+        instructionsText.set("Enter the ID you would like to edit")
+        tempEnter.append(tk.Entry(window))
+        tempEnter[0].grid(row=2,column=1,pady=10,padx=10)
+        tempButon.append(tk.Button(window,text="Submit",command=lambda:continueEditColum(tableSelected,tempEnter[0].get())))
+        tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+
+def continueEditColum(table,editID):
+    clearWindow()
+    colum = tk.StringVar(window)
+    instructionsText.set("Select column of the data you want to change")
+    a=1
+    for column in tablesInDatabase[table].columData:
+        tempRadio.append(tk.Radiobutton(window,variable=colum,value=column,text=column))
+        tempRadio[-1].grid(row=2,column=a,padx=10,pady=10)
+        a+=1
+    colum.set('id')
+    tempButon.append(tk.Button(window,text="Submit",command=lambda:continueEditData(table,editID,colum.get())))
+    tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+
+def continueEditData(table,editID,editColumn):
+    clearWindow()
+    instructionsText.set("Enter the data you would like have")
+    tempEnter.append(tk.Entry(window))
+    tempEnter[0].grid(row=2,column=1,pady=10,padx=10)
+    tempButon.append(tk.Button(window,text="Submit",command=lambda:editColum(table,editID,editColumn,tempEnter[0].get())))
+    tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
 
 def continueSurchData(tableSelected,surchData):
     clearWindow()
     tempEnter.insert(0,tk.Entry(window))
-    tempEnter[0].grid(row=2,column=2,pady=10,padx=10)
+    tempEnter[0].grid(row=2,column=1,pady=10,padx=10)
     tempButon.append(tk.Button(window,text="Submit",command=lambda:continueSurchFindNum(tableSelected,surchData,tempEnter[0].get())))
     tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
 
@@ -216,7 +248,8 @@ def continueSurchFindNum(tableSelected,surchData,data):
 
 def continueSurchFindColum(tableSelected,surchData,num,loopNum,findColums,add=None):
     clearWindow()
-    findColums.append(add)
+    if add != None:
+        findColums.append(add)
     if num == len(tablesInDatabase[tableSelected].columData):
         startSurch(tableSelected,surchData[0],surchData[1],'*')
     elif loopNum == num:
@@ -231,7 +264,7 @@ def continueSurchFindColum(tableSelected,surchData,num,loopNum,findColums,add=No
             tempRadio[-1].grid(row=2,column=a,padx=10,pady=10)
             a+=1
         colum.set('id')
-        tempButon.append(tk.Button(window,text='Submit',command=lambda:continueSurchFindColum(tableSelected,surchData,num,loopNum+1,findColums,colum)))
+        tempButon.append(tk.Button(window,text='Submit',command=lambda:continueSurchFindColum(tableSelected,surchData,num,loopNum+1,findColums,colum.get())))
         tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
 
 
@@ -242,13 +275,30 @@ tempEnter[2].grid(row=3,column=3,pady=10,padx=10)'''
 #tempButon.insert(0,tk.Button(window,text="surch",command=lambda:startSurch(tableSelected,colum.get(),tempEnter[0].get(),tempEnter[2].get())))
 #tempButon[0].grid(row=3,column=4,pady=10,padx=10)
 
-def startSurch(table, colum, data, find):
+def editColum(table,editID,editcolumn,editData):
     clearWindow()
+    if tablesInDatabase[table].columData[editcolumn] == "tinytext":
+        editData = f"'{editData}'"
+    changeEntry(table,editID,editcolumn,editData)
+    entery = surchTable(table,editcolumn,editData)
+    instructionsText.set(entery[0])
+    tempButon.append(tk.Button(window,text='Menu',command=startOptionSelect))
+    tempButon[-1].grid(row=2,column=1)
+
+def startSurch(table, colum, data, findlist):
+    clearWindow()
+    find = ', '.join(findlist)
     result = surchTable(table,colum,data,find)
     #print(result,table, colum, data, find)
-    for i in range(len(result)):
-        tempLable.append(tk.Label(window,text=result[i]))
-        tempLable[-1].grid(row=2,column=1+i,pady=10,padx=10)
+    if result == []:
+        tempLable.append(tk.Label(window,text=f"No {data} was found in column {colum} of table {table}"))
+        tempLable[-1].grid(row=3,column=1,pady=10,padx=10)
+    else:
+        for i in range(len(result)):
+            tempLable.append(tk.Label(window,text=result[i]))
+            tempLable[-1].grid(row=3+i,column=1,pady=3,padx=10)
+    tempButon.append(tk.Button(window,text='Menu',command=startOptionSelect))
+    tempButon[-1].grid(row=2,column=1)
 
 def tableSelect(option): #return what table is selected
     global tableSelected
@@ -269,17 +319,15 @@ def tableSelect(option): #return what table is selected
     
 
 def startoption(option):
-    stopOptionSelect()
+    surchButton.grid_forget()
+    editButton.grid_forget()
     tableSelect(option)
 
 surchButton = tk.Button(window,text='Surch Table',command=lambda:startoption('surch'))
 editButton = tk.Button(window,text='Edit Entry',command=lambda:startoption('edit'))
 
-def stopOptionSelect():
-    surchButton.grid_forget()
-    editButton.grid_forget()
-
 def startOptionSelect():
+    clearWindow()
     instructionsText.set("Select Option")
     surchButton.grid(column=1,row=2,padx=10,pady=10)
     editButton.grid(column=2,row=2,padx=10,pady=10)
