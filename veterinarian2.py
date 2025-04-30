@@ -28,7 +28,7 @@ class sqlBase(): # parent class for all sql objects
 
     def displayData(self, colums = ''):
         for colum in self.columData:
-            if tablesInDatabase[self.tableName].columData[colum] == 'tinytext':
+            if tablesInDatabase[self.tableName].columData[colum] == 'tinytext' or tablesInDatabase[self.tableName].columData[colum] == 'mediumtext':
                 colums += f", '{self.columData[colum]}'"
             else:
                 colums += f", {self.columData[colum]}"
@@ -63,7 +63,9 @@ class sqlTable(sqlBase):
         
     def createTable(self):
         query = f"create table if not exists {self.name} (id integer primary key autoincrement, {self.displayColumData()});"
+        #print(query)
         cursor.execute(query)
+        connection.commit()
         cursor.execute(f'PRAGMA table_info({self.name});')
         return cursor.fetchall() # returns table info
 
@@ -78,6 +80,7 @@ class sqlData(sqlBase):
     def addEntry(self):
         query = f"insert into {self.tableName} ({self.colums}) Values ({self.displayData()});"
         cursor.execute(query)
+        connection.commit()
         #cursor.execute(f'select * from {self.tableName};')
         #print(cursor.fetchall())
 
@@ -98,8 +101,8 @@ def reAddTable():
     result = cursor.fetchall()
     #print(result)
     for table in result:
-        #if table[0] == 'npc' or table[0] == 'customers':
-        #    continue
+        if table[0] == 'npc' or table[0] == 'customers' or table[0] == 'Test2':
+            continue
         columnType = {}
         cursor.execute(f'PRAGMA table_info({table[0]});')
         columns = cursor.fetchall()
@@ -109,13 +112,16 @@ def reAddTable():
         
 reAddTable()
 
+#sqlTable("owners",{'firstName':'tinytext','lastName':'tinytext','phoneNum':'tinyint','email':'tinytext','adress':'tinytext','city':'tinytext','postalcode':'tinytext'})
+#sqlTable("pets",{'name':'tinytext','type':'tinytext','breed':'tinytext','birthdate':'tinytext','ownerID':'integer'})
+#sqlTable("visits",{'ownerID':'integer','petID':'integer','details':'mediumtext','cost':'integer','paid':'integer'})
 #sqlTable("Test", {'name':'tinytext'})
 #sqlTable("Test2", {"name":"tinytext","number":"integer"})
 #sqlData("Test2", {"name":"Joe",'number':3})
 #print(tablesInDatabase['Test2'].entrys)
 
 def surchTable(surchTable, surchColum, surchData, requestedData = "*"):
-    print(surchTable, surchColum, surchData, requestedData)
+    #print(surchTable, surchColum, surchData, requestedData)
     if surchTable not in tablesInDatabase:# If table does not exsist stop from crash
         return None
     if surchColum not in tablesInDatabase[surchTable].columData: # if the requested colum does not exsist won't crash 
@@ -135,10 +141,10 @@ def changeEntry(table, id, updateColum, updateData):
     if updateColum not in tablesInDatabase[table].columData: # if the requested colum does not exsist won't crash  
         return None
     query = f"Update {tablesInDatabase[table].name} set {updateColum} = {updateData} where id = {id};"
-    print(query)
+    #print(query)
     cursor.execute(query)
     tablesInDatabase[table].entrys[id-1].columData[updateColum]=updateData
-    #connection.commit()
+    connection.commit()
     return None #cursor.fetchall()
 
 
@@ -182,6 +188,7 @@ def clearWindow():
 def continueOption(optionSelected,tableSelected): #return what table is selected
     clearWindow()
     if optionSelected == "surch":
+        instructionsText.set("Select the column that you are surching in")
         colum = tk.StringVar(window)
         a=1
         for column in tablesInDatabase[tableSelected].columData:
@@ -197,6 +204,42 @@ def continueOption(optionSelected,tableSelected): #return what table is selected
         tempEnter[0].grid(row=2,column=1,pady=10,padx=10)
         tempButon.append(tk.Button(window,text="Submit",command=lambda:continueEditColum(tableSelected,tempEnter[0].get())))
         tempButon[-1].grid(row=3,column=1,padx=10,pady=10)
+    if optionSelected == "create":
+        instructionsText.set("Enter the data for the new entery")
+        columns = []
+        entrys = 1
+        for columnlable in tablesInDatabase[tableSelected].columData:
+            if columnlable == 'id':
+                continue
+            tempLable.append(tk.Label(window,text=columnlable))
+            tempLable[-1].grid(row=2,column=entrys,padx=10,pady=10)
+            columns.append(columnlable)
+            entrys +=1
+        entrys -= 1
+        increment = 1
+        for i in range(entrys):
+            tempEnter.append(tk.Entry(window))
+            tempEnter[-1].grid(row=3,column=increment,padx=10,pady=10)
+            increment += 1
+        tempButon.append(tk.Button(window,text="Submit",command=lambda:addEntry(tableSelected,columns)))
+        tempButon[-1].grid(row=4,column=1,padx=10,pady=10)
+
+def addEntry(tableSelected,columns):
+    columData = {}
+    for i in range(len(columns)):
+        columData.update({columns[i]:tempEnter[i].get()})
+    #print(columData)
+    clearWindow()
+    sqlData(tableSelected,columData)
+    if tablesInDatabase[tableSelected].columData[columns[0]] == "tinytext" or tablesInDatabase[tableSelected].columData[columns[0]] == "mediumtext":
+        surch = f"'{columData[columns[0]]}'"
+    else:
+        surch = columData[columns[0]]
+    result = surchTable(tableSelected,columns[0],surch)
+    instructionsText.set(result[0])
+    tempButon.append(tk.Button(window,text='Menu',command=startOptionSelect))
+    tempButon[-1].grid(row=2,column=1,padx=10,pady=10)
+
 
 def continueEditColum(table,editID):
     clearWindow()
@@ -221,6 +264,7 @@ def continueEditData(table,editID,editColumn):
 
 def continueSurchData(tableSelected,surchData):
     clearWindow()
+    instructionsText.set("Enter the data you are looking for")
     tempEnter.insert(0,tk.Entry(window))
     tempEnter[0].grid(row=2,column=1,pady=10,padx=10)
     tempButon.append(tk.Button(window,text="Submit",command=lambda:continueSurchFindNum(tableSelected,surchData,tempEnter[0].get())))
@@ -228,7 +272,8 @@ def continueSurchData(tableSelected,surchData):
 
 def continueSurchFindNum(tableSelected,surchData,data):
     clearWindow()
-    if tablesInDatabase[tableSelected].columData[surchData[0]] == 'tinytext':
+    instructionsText.set("How many column would you like to have shown")
+    if tablesInDatabase[tableSelected].columData[surchData[0]] == 'tinytext' or tablesInDatabase[tableSelected].columData[surchData[0]] == 'mediumtext':
         data = f"'{data}'"
     surchData.append(data)
     #print(surchData)
@@ -248,6 +293,7 @@ def continueSurchFindNum(tableSelected,surchData,data):
 
 def continueSurchFindColum(tableSelected,surchData,num,loopNum,findColums,add=None):
     clearWindow()
+    instructionsText.set("Select the columns you want to see one at a time, press enter between each column")
     if add != None:
         findColums.append(add)
     if num == len(tablesInDatabase[tableSelected].columData):
@@ -277,7 +323,7 @@ tempEnter[2].grid(row=3,column=3,pady=10,padx=10)'''
 
 def editColum(table,editID,editcolumn,editData):
     clearWindow()
-    if tablesInDatabase[table].columData[editcolumn] == "tinytext":
+    if tablesInDatabase[table].columData[editcolumn] == "tinytext" or tablesInDatabase[table].columData[editcolumn] == "mediumtext":
         editData = f"'{editData}'"
     changeEntry(table,editID,editcolumn,editData)
     entery = surchTable(table,editcolumn,editData)
@@ -317,20 +363,23 @@ def tableSelect(option): #return what table is selected
     tempButon.append(tk.Button(window,text='Submit',command=lambda:continueOption(option,tableSelected.get())))
     tempButon[-1].grid(row=3,column=3) 
     
-
 def startoption(option):
+    clearWindow()
     surchButton.grid_forget()
     editButton.grid_forget()
+    createButton.grid_forget()
     tableSelect(option)
 
-surchButton = tk.Button(window,text='Surch Table',command=lambda:startoption('surch'))
-editButton = tk.Button(window,text='Edit Entry',command=lambda:startoption('edit'))
+surchButton = tk.Button(window,text='Surch for record in a table',command=lambda:startoption('surch'))
+editButton = tk.Button(window,text='Edit table record',command=lambda:startoption('edit'))
+createButton = tk.Button(window,text='Add new record to a table',command=lambda:startoption('create'))
 
 def startOptionSelect():
     clearWindow()
     instructionsText.set("Select Option")
     surchButton.grid(column=1,row=2,padx=10,pady=10)
     editButton.grid(column=2,row=2,padx=10,pady=10)
+    createButton.grid(column=3,row=2,padx=10,pady=10)
 
 startOptionSelect()
 
