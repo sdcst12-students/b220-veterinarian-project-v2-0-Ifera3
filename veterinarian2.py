@@ -96,15 +96,15 @@ for i in result:
 '''
 
 def reAddTable():#finds all tables in data base and adds them to the dictionary od table with their name and object
-    query = "SELECT * FROM sqlite_sequence;"
+    query = "SELECT * FROM sqlite_sequence;" #shows all tables i ndata base the have at lest one entry
     cursor.execute(query)
     result = cursor.fetchall()
     #print(result)
     for table in result:
-        if table[0] == 'npc' or table[0] == 'customers' or table[0] == 'Test2':#test tables that are not in the final project
+        if table[0] == 'npc' or table[0] == 'customers' or table[0] == 'Test2' or table[0] == 'Test':#test tables that are not in the final project
             continue
         columnType = {}
-        cursor.execute(f'PRAGMA table_info({table[0]});')
+        cursor.execute(f'PRAGMA table_info({table[0]});')# gets columns and varubl types for curent table in craetion
         columns = cursor.fetchall()
         for column in columns:
             columnType.update({column[1]:column[2]})
