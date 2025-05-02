@@ -142,7 +142,7 @@ def changeEntry(table, id, updateColum, updateData):#Changes table entry, needs 
     query = f"Update {tablesInDatabase[table].name} set {updateColum} = {updateData} where id = {id};"
     #print(query)
     cursor.execute(query)
-    tablesInDatabase[table].entrys[id-1].columData[updateColum]=updateData
+    tablesInDatabase[table].entrys[int(id)-1].columData[updateColum]=updateData
     connection.commit()
     return None #cursor.fetchall()
 
